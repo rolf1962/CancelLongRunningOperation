@@ -54,7 +54,8 @@ namespace CancelLongRunningOperation
                 Console.Write(".");
                 Thread.Sleep(1000);
 
-                //if (ii == cancelAtPass) Cancel($"Test abort at ii={ii + 1}");
+                // Comment this line out, to suspend cancelation
+                if (ii == cancelAtPass) Cancel($"Test abort at ii={ii + 1}");
             }
 
             Console.WriteLine("Done.");
