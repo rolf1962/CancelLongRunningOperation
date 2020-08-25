@@ -40,6 +40,8 @@ namespace CancelLongRunningOperation
         /// after a random passes of loop.
         /// </summary>
         /// <param name="exportName">Name of the document to create, without extension.</param>
+        /// <param name="numberOfLoops">Count of loops to pass. The condition for cancel 
+        /// is a random number in the range from 0 to this count.</param>
         /// <returns>The full name of the created document.</returns>
         public string DoExport(string exportName = "", int numberOfLoops = 10)
         {
@@ -70,6 +72,8 @@ namespace CancelLongRunningOperation
         /// This thread can be aborted by calling <see cref="Cancel(string, string)"/>.
         /// </summary>
         /// <param name="exportName">Name of the document to create, without extension.</param>
+        /// <param name="numberOfLoops">Count of loops to pass. The condition for cancel 
+        /// is a random number in the range from 0 to this count.</param>
         /// <returns>The full name of the created document.</returns>
         public string DoExportInBackground(string exportName = "", int numberOfLoops = 10)
         {
