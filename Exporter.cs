@@ -5,13 +5,12 @@ using System.Threading;
 namespace CancelLongRunningOperation
 {
     /// <summary>
-    /// This class implements a long running operation executed in an own, cancelabled thread.
+    /// This class implements a long running, cancelable operation.
     /// </summary>
     public class Exporter
     {
-        private readonly object _doExportLock = new object();
-        private bool _isCanceled = false;
-        CancellationTokenSource _cancellationTokenSource = null;
+        private readonly object _cancelLock = new object();
+        private bool _isCanceled;
 
         /// <summary>
         /// Signals that work with this class should be terminated. 
@@ -21,16 +20,19 @@ namespace CancelLongRunningOperation
         {
             get
             {
-                lock (_doExportLock)
+                lock (_cancelLock)
                 {
                     return _isCanceled;
                 }
             }
             private set
             {
-                lock (_doExportLock)
+                lock (_cancelLock)
                 {
-                    _isCanceled = value;
+                    if (_isCanceled != value)
+                    {
+                        _isCanceled = value;
+                    }
                 }
             }
         }
@@ -39,18 +41,16 @@ namespace CancelLongRunningOperation
         /// Simulates a long running operation, that uses <see cref="Cancel(string, string)"/> 
         /// after a random passes of loop.
         /// </summary>
-        /// <param name="cancellationTokenSource"></param>
         /// <param name="exportName">Name of the document to create, without extension.</param>
         /// <param name="numberOfLoops">Count of loops to pass.</param>
         /// <param name="cancelAtPass">Number of the pass in which the process is to be canceled. 
         /// A value of -1 or higher <paramref name="numberOfLoops"/> prevents the cancellation.</param>
         /// <returns>The full name of the created document.</returns>
-        public string DoExport(CancellationTokenSource cancellationTokenSource, string exportName = "", int numberOfLoops = 10, int cancelAtPass = -1)
+        public string DoExport(string exportName = "", int numberOfLoops = 10, int cancelAtPass = -1)
         {
-            _cancellationTokenSource = cancellationTokenSource;
             bool cancel = -1 < cancelAtPass && cancelAtPass <= numberOfLoops;
 
-            Console.WriteLine($"Export running." + (cancel ? $" Cancel at {cancelAtPass}" : string.Empty));
+            Console.WriteLine($"Export running ({numberOfLoops} passes)." + (cancel ? $"\nCancel at {cancelAtPass}" : string.Empty));
             Console.Write("Progress: ");
 
             for (int ii = 0; ii < numberOfLoops; ii++)
@@ -77,19 +77,9 @@ namespace CancelLongRunningOperation
         {
             IsCanceled = true;
 
-            if (null != _cancellationTokenSource && _cancellationTokenSource.Token.CanBeCanceled)
-            {
-                throw new OperationCanceledException(
-                    $"\nProcess aborted by {calledBy}." +
-                    (string.IsNullOrWhiteSpace(reason) ? string.Empty : $"\nReason: {reason}"),
-                    _cancellationTokenSource.Token);
-            }
-            else
-            {
-                throw new OperationCanceledException(
-                    $"\nProcess aborted by {calledBy}." +
-                    (string.IsNullOrWhiteSpace(reason) ? string.Empty : $"\nReason: {reason}"));
-            }
+            throw new OperationCanceledException(
+                $"\nProcess aborted by {calledBy}." +
+                (string.IsNullOrWhiteSpace(reason) ? string.Empty : $" {reason}"));
         }
     }
 }

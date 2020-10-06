@@ -1,54 +1,69 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CancelLongRunningOperation
 {
     class Program
     {
+        private static int CancelAtPass { get; } = 2;
+        private static int NumberOfLoops { get; } = 3;
+        private static Exporter Exporter { get; } = new Exporter();
+
         static async Task Main(string[] args)
         {
             string documentname = string.Empty;
-            Exporter exporter = new Exporter();
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            Console.WriteLine($"Export startet with {nameof(StartAsync)}");
+            documentname = await StartAsync();
+            Console.Write("\n\n");
+
+            Console.WriteLine($"Export startet with {nameof(Start)}");
+            documentname = Start();
+            Console.Write("\n\n");
+
+            Console.Write("Press any key . . .");
+            Console.ReadKey();
+        }
+
+        private static async Task<string> StartAsync()
+        {
+            string documentname = string.Empty;
 
             var task = Task.Run(() =>
             {
-                // Were we already canceled?
-                cancellationToken.ThrowIfCancellationRequested();
+                documentname = Exporter.DoExport(numberOfLoops: NumberOfLoops, cancelAtPass: CancelAtPass);
 
-                // Execute the cancelable long running operation
-                documentname = exporter.DoExport(cancellationTokenSource, cancelAtPass: 5);
+            });
 
-                // Poll on this property if you have to do other cleanup before throwing.
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    // Clean up here, then...
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
-            }, cancellationTokenSource.Token); // Pass same token to Task.Run.
-
-            // Await with try-catch:
             try
             {
-                Console.WriteLine("Export started.");
-
                 await task;
-
-                Console.WriteLine($"Created document: {documentname}");
             }
             catch (OperationCanceledException e)
             {
                 Console.WriteLine($"\n{nameof(OperationCanceledException)} thrown with message: {e.Message}");
             }
-            finally
+
+            Console.WriteLine($"Created document: {documentname}");
+            
+            return documentname;
+        }
+
+        public static string Start()
+        {
+            string documentname = string.Empty;
+            try
             {
-                cancellationTokenSource.Dispose();
+                documentname = Exporter.DoExport(numberOfLoops: NumberOfLoops, cancelAtPass: CancelAtPass);
+            }
+            catch (OperationCanceledException e)
+            {
+                Console.WriteLine($"\n{nameof(OperationCanceledException)} thrown with message: {e.Message}");
             }
 
-            Console.WriteLine("End with <Enter>");
-            Console.ReadLine();
+            Console.WriteLine($"Created document: {documentname}");
+
+            return documentname;
         }
     }
 }
